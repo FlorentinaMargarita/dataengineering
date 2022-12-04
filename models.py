@@ -75,6 +75,7 @@ with open('2017-07_bme280sof.csv', newline='') as csvfile:
     # line below connects to the database
     with Session(engine) as session:
         # line below: it creates all the database.
+
         Base.metadata.create_all(engine)
         session.commit()
         session.bulk_save_objects(super_array_man)
@@ -86,16 +87,16 @@ with open('2017-07_bme280sof.csv', newline='') as csvfile:
                 #it will commit everything that was added up to this point. 
                 # session.commit()
         #line below: in case the number of rows is not exactly divisible by 1000
+
+
         session.commit()
     
-
+#this is extremly fast.
 with open('2017-07_sds011sof.csv', newline='') as csvfile:
     air_metric_reader = csv.reader(csvfile)
     sds011_array = []
-
-
     for row in air_metric_reader:
-        id,sensor_id,location,lat,lon,timestamp= row
+        id,sensor_id,location,lat,lon,timestamp, p1, p2= row
         # skipping header row
         if (location == 'location'):
             continue
@@ -108,7 +109,7 @@ with open('2017-07_sds011sof.csv', newline='') as csvfile:
         p1 = float(temperature)
         p2 = float(humidity)
 
-        sds011 = Sds011(id = id, sensor_id= sensor_id, location= location, lat=lat, lon=lon, pressure=pressure, temperature=temperature, timestamp= timestamp, humidity=humidity)
+        sds011 = Sds011(id = id, sensor_id= sensor_id, location= location, lat=lat, lon=lon, p1=p1, p2=p2, timestamp= timestamp)
         super_array_man.append(bme280)
     
     # batch architecture 
@@ -119,22 +120,12 @@ with open('2017-07_sds011sof.csv', newline='') as csvfile:
         session.commit()
         session.bulk_save_objects(sds011_array)
         small_list = []
-for item in super_array:
-    small_list.append(item)
-    if len(small_list) >= 1000:
-        session.bulk_save_objects(small_list)
+        for item in sds011_array:
+            small_list.append(item)
+            if len(small_list) >= 1000:
+                session.bulk_save_objects(small_list)
+                session.commit()
+                small_list = []
+                session.bulk_save_objects(small_list)
+                session.commit()
         session.commit()
-        small_list = []
-session.bulk_save_objects(small_list)
-session.commit()
-        #the below code was too slow. 
-        # for index, item in enumerate(super_array_man):
-            # line below: adding a row from the csv file. 
-            # session.add(item)
-            # if index % 1000 == 0:
-                #it will commit everything that was added up to this point. 
-                # session.commit()
-        #line below: in case the number of rows is not exactly divisible by 1000
-        session.commit()
-
-    #todo: do the same thing for the other table
