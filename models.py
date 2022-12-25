@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Float, Integer, String
 from sqlalchemy.orm import declarative_base, Session
+import csv
 
 Base = declarative_base()
 
@@ -44,52 +45,53 @@ from sqlalchemy import create_engine
 #they will say where it is, which username and password should i use to connect to the db. which db inside of the db server should i connect to or should i open, what port should i connect to. should i use ssl to connect. 
 #create_engine is lazy. I tell it everything it would need to know to connect. But it doesnt until it finds something where i will connect. 
 #echo true => it tells it to print the queries into the terminal
-engine = create_engine('postgresql+pg8000://postgres:postgrespw@localhost:49154', echo=True)
 
+print("Starting the process")
+#@db => db is the name of the service as it's defined in docker compose on the docker network.
+engine = create_engine('postgresql+pg8000://postgres:dontwanttostudy@db', echo=True)
 
-import csv
-with open('2017-07_bme280sof.csv', newline='') as csvfile:
-    air_metric_reader = csv.reader(csvfile)
-    super_array_man = []
+print('opening csv to read data into the database.')
+# with open('2017-07_bme280sof.csv', newline='') as csvfile:
+#     air_metric_reader = csv.reader(csvfile)
+#     super_array_man = []
 
+#     for row in air_metric_reader:
+#         id,sensor_id,location,lat,lon,timestamp,pressure,temperature,humidity = row
+#         # skipping header row
+#         if (location == 'location'):
+#             continue
 
-    for row in air_metric_reader:
-        id,sensor_id,location,lat,lon,timestamp,pressure,temperature,humidity = row
-        # skipping header row
-        if (location == 'location'):
-            continue
+#         id = int(id)
+#         sensor_id = int(sensor_id)
+#         location = int(location)
+#         lat = float(lat)
+#         lon = float(lon)
+#         pressure = float(pressure)
+#         temperature = float(temperature)
+#         humidity = float(humidity)
 
-        id = int(id)
-        sensor_id = int(sensor_id)
-        location = int(location)
-        lat = float(lat)
-        lon = float(lon)
-        pressure = float(pressure)
-        temperature = float(temperature)
-        humidity = float(humidity)
-
-        bme280 = Bme280(id = id, sensor_id= sensor_id, location= location, lat=lat, lon=lon, pressure=pressure, temperature=temperature, timestamp= timestamp, humidity=humidity)
-        super_array_man.append(bme280)
+#         bme280 = Bme280(id = id, sensor_id= sensor_id, location= location, lat=lat, lon=lon, pressure=pressure, temperature=temperature, timestamp= timestamp, humidity=humidity)
+#         super_array_man.append(bme280)
     
-    # batch architecture 
-    # line below connects to the database
-    with Session(engine) as session:
-        # line below: it creates all the database.
+#     # batch architecture 
+#     # line below connects to the database
+#     with Session(engine) as session:
+#         # line below: it creates all the database.
 
-        Base.metadata.create_all(engine)
-        session.commit()
-        session.bulk_save_objects(super_array_man)
-        #the below code was too slow. 
-        # for index, item in enumerate(super_array_man):
-            # line below: adding a row from the csv file. 
-            # session.add(item)
-            # if index % 1000 == 0:
-                #it will commit everything that was added up to this point. 
-                # session.commit()
-        #line below: in case the number of rows is not exactly divisible by 1000
+#         Base.metadata.create_all(engine)
+#         session.commit()
+#         session.bulk_save_objects(super_array_man)
+#         #the below code was too slow. 
+#         # for index, item in enumerate(super_array_man):
+#             # line below: adding a row from the csv file. 
+#             # session.add(item)
+#             # if index % 1000 == 0:
+#                 #it will commit everything that was added up to this point. 
+#                 # session.commit()
+#         #line below: in case the number of rows is not exactly divisible by 1000
 
 
-        session.commit()
+#         session.commit()
     
 #this is extremly fast.
 with open('2017-07_sds011sof.csv', newline='') as csvfile:
@@ -106,11 +108,12 @@ with open('2017-07_sds011sof.csv', newline='') as csvfile:
         location = int(location)
         lat = float(lat)
         lon = float(lon)
-        p1 = float(temperature)
-        p2 = float(humidity)
+        #some of p1 and p2 are empty strings. 
+        p1 = float(p1) if p1 != '' else 0.0
+        p2 = float(p2) if p2 != '' else 0.0
 
         sds011 = Sds011(id = id, sensor_id= sensor_id, location= location, lat=lat, lon=lon, p1=p1, p2=p2, timestamp= timestamp)
-        super_array_man.append(bme280)
+        sds011_array.append(sds011)
     
     # batch architecture 
     # line below connects to the database
@@ -118,7 +121,6 @@ with open('2017-07_sds011sof.csv', newline='') as csvfile:
         # line below: it creates all the database.
         Base.metadata.create_all(engine)
         session.commit()
-        session.bulk_save_objects(sds011_array)
         small_list = []
         for item in sds011_array:
             small_list.append(item)
@@ -126,6 +128,5 @@ with open('2017-07_sds011sof.csv', newline='') as csvfile:
                 session.bulk_save_objects(small_list)
                 session.commit()
                 small_list = []
-                session.bulk_save_objects(small_list)
-                session.commit()
+        session.bulk_save_objects(small_list)
         session.commit()
