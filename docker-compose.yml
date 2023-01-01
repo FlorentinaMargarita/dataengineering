@@ -2,7 +2,7 @@ services:
   db:
     #go fetch the image called postgres from the docker registry.
     image: postgres
-    #it will set this envionrmnet variable for the image. 
+    #it will set this environment variable for the image. 
     #this is what the postgres image uses to set the initial password. 
     environment:
       - POSTGRES_PASSWORD=dontwanttostudy
@@ -13,35 +13,3 @@ services:
   #So use the current directory as the build-context. This directory needs to contain the Dockerfile.
     build:
       context: .
-
-    # ports:
-          #hostport:containerport
-    #   - 3000:3000
-    # working_dir: /app
-    # this is an example of a bind mount: 
-    # volumes:
-    #   - ./:/app
-
-
-
-    #there are container ports and host ports. host ports are ports on my machine. 
-    #i would use these if i wanted to connect my machine to a specific container. eg.: 
-    #connecting a browser to a web server container. or pgadmin to postgres container. 
-    #container ports: ports exposed on individual containers. 
-    #ngnx: if i am ngnx i would listen to port 80. the moment i listen to port 80, other people can connect.
-    #i don't need docker or docker compose to list those ports. 
-
-#1. build  => produce image as output => build runs all the commands in the dockerfile except for cmd.
-#it stores cmd in the image ,but it doesn't run. 
-#2. run => I take image as input and execute it. 
-#I could override cmd, and then it will execute something else.
-# with volumes: => models.py is not in the image. 
-# The volume tricks the container. => when container asks for a file, then Docker goes looking inside of volumes. 
-# image runs like it normally would. 
-
-
-# TCP => sends my computer a packet => one of the fiels on that packet is port. 
-# My OS gets the packet, it looks at the fields and sees which port its trying to connect to. 
-# It will look in an internal data structure: LISTEN-TABLE. It will look in there by port
-#and tries to find the process which is listening on that port. if it finds one it will notifiy the process.
-#

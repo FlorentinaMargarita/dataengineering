@@ -18,7 +18,7 @@ class Bme280(Base):
     humidity = Column(Float)
     
     def __repr__(self):
-        return f"User(id={self.id!r}, sensor_id={self.sensor_id!r}, location={self.location!r})"
+        return f"User(id={self.id!r}, sensor_id={self.sensor_id!r}, location={self.location!r}) log"
 
 
 class Sds011(Base):
@@ -38,64 +38,58 @@ class Sds011(Base):
 
 
 from sqlalchemy import create_engine
-#connection string: string inside of crate_engine 
-#connection string is like a url. 
-#there are different kinds of connection strings. For every ORM it works a little different.
-#url has different components and they'll tell you how to connect to the database. 
-#they will say where it is, which username and password should i use to connect to the db. which db inside of the db server should i connect to or should i open, what port should i connect to. should i use ssl to connect. 
-#create_engine is lazy. I tell it everything it would need to know to connect. But it doesnt until it finds something where i will connect. 
-#echo true => it tells it to print the queries into the terminal
 
 print("Starting the process")
-#@db => db is the name of the service as it's defined in docker compose on the docker network.
+
 engine = create_engine('postgresql+pg8000://postgres:dontwanttostudy@db', echo=True)
 
 print('opening csv to read data into the database.')
-# with open('2017-07_bme280sof.csv', newline='') as csvfile:
-#     air_metric_reader = csv.reader(csvfile)
-#     super_array_man = []
-
-#     for row in air_metric_reader:
-#         id,sensor_id,location,lat,lon,timestamp,pressure,temperature,humidity = row
-#         # skipping header row
-#         if (location == 'location'):
-#             continue
-
-#         id = int(id)
-#         sensor_id = int(sensor_id)
-#         location = int(location)
-#         lat = float(lat)
-#         lon = float(lon)
-#         pressure = float(pressure)
-#         temperature = float(temperature)
-#         humidity = float(humidity)
-
-#         bme280 = Bme280(id = id, sensor_id= sensor_id, location= location, lat=lat, lon=lon, pressure=pressure, temperature=temperature, timestamp= timestamp, humidity=humidity)
-#         super_array_man.append(bme280)
-    
-#     # batch architecture 
-#     # line below connects to the database
-#     with Session(engine) as session:
-#         # line below: it creates all the database.
-
-#         Base.metadata.create_all(engine)
-#         session.commit()
-#         session.bulk_save_objects(super_array_man)
-#         #the below code was too slow. 
-#         # for index, item in enumerate(super_array_man):
-#             # line below: adding a row from the csv file. 
-#             # session.add(item)
-#             # if index % 1000 == 0:
-#                 #it will commit everything that was added up to this point. 
-#                 # session.commit()
-#         #line below: in case the number of rows is not exactly divisible by 1000
-
-
-#         session.commit()
-    
-#this is extremly fast.
-with open('2017-07_sds011sof.csv', newline='') as csvfile:
+with open('2017-07_bme280sof.csv', newline='') as csvfile:
+    print('Do you get inside of here?')
     air_metric_reader = csv.reader(csvfile)
+    bme280_array = []
+
+    for row in air_metric_reader:
+        id,sensor_id,location,lat,lon,timestamp,pressure,temperature,humidity = row
+        # skipping header row
+        if (location == 'location'):
+            continue
+
+        id = int(id)
+        sensor_id = int(sensor_id)
+        location = int(location)
+        lat = float(lat)
+        lon = float(lon)
+        pressure = float(pressure)
+        temperature = float(temperature)
+        humidity = float(humidity)
+
+        bme280 = Bme280(id = id, sensor_id= sensor_id, location= location, lat=lat, lon=lon, pressure=pressure, temperature=temperature, timestamp= timestamp, humidity=humidity)
+        bme280_array.append(bme280)
+    
+    # batch architecture 
+    # line below connects to the database
+    with Session(engine) as session:
+        Base.metadata.create_all(engine)
+        session.commit()
+        bme280_small_list = []
+        #the below code was too slow. 
+        for item in bme280_array:
+            # line below: adding a row from the csv file. 
+            bme280_small_list.append(item)
+            if len(bme280_small_list) >= 1000:
+                session.bulk_save_objects(bme280_small_list)
+                session.commit()
+                bme280_small_list = []
+                print('Do you even lift?')
+
+        session.bulk_save_objects(bme280_small_list)
+        session.commit()
+    
+with open('2017-07_sds011sof.csv', newline='') as csvfile1:
+    print('Inside of sds011?')
+
+    air_metric_reader = csv.reader(csvfile1)
     sds011_array = []
     for row in air_metric_reader:
         id,sensor_id,location,lat,lon,timestamp, p1, p2= row
